@@ -13,6 +13,7 @@ import (
 	"github.com/yourorg/crm/internal/config"
 	"github.com/yourorg/crm/internal/domain"
 	"github.com/yourorg/crm/internal/repository"
+	"github.com/yourorg/crm/internal/worker"
 	"github.com/yourorg/crm/pkg/jwtutil"
 	"github.com/yourorg/crm/pkg/mailer"
 	"golang.org/x/crypto/bcrypt"
@@ -21,13 +22,13 @@ import (
 // ─── Errors ───────────────────────────────────────────────────────────────────
 
 var (
-	ErrNotFound          = errors.New("not found")
-	ErrDuplicate         = errors.New("already exists")
-	ErrUnauthorized      = errors.New("unauthorized")
-	ErrForbidden         = errors.New("forbidden")
+	ErrNotFound           = errors.New("not found")
+	ErrDuplicate          = errors.New("already exists")
+	ErrUnauthorized       = errors.New("unauthorized")
+	ErrForbidden          = errors.New("forbidden")
 	ErrInvalidCredentials = errors.New("invalid email or password")
-	ErrInvalidToken      = errors.New("invalid or expired token")
-	ErrWeakPassword      = errors.New("password must be at least 8 characters with upper, lower, digit")
+	ErrInvalidToken       = errors.New("invalid or expired token")
+	ErrWeakPassword       = errors.New("password must be at least 8 characters with upper, lower, digit")
 )
 
 // ─── Auth Service ─────────────────────────────────────────────────────────────
@@ -46,9 +47,9 @@ type LoginInput struct {
 }
 
 type AuthResult struct {
-	User        *domain.User  `json:"user"`
-	AccessToken string        `json:"access_token"`
-	ExpiresIn   int64         `json:"expires_in"`
+	User        *domain.User `json:"user"`
+	AccessToken string       `json:"access_token"`
+	ExpiresIn   int64        `json:"expires_in"`
 	// Refresh token is set as httpOnly cookie by handler
 }
 
@@ -246,32 +247,32 @@ func (s *authService) issueTokens(ctx context.Context, user *domain.User) (*Auth
 	}, rawRefresh, nil
 }
 
-// ─── Contact Service 
+// ─── Contact Service
 
 type CreateContactInput struct {
-	FirstName   string     `json:"first_name" binding:"required,min=1,max=100"`
-	LastName    string     `json:"last_name"  binding:"omitempty,max=100"`
-	Email       string     `json:"email"      binding:"omitempty,email"`
-	Phone       string     `json:"phone"      binding:"omitempty"`
-	Title       string     `json:"title"      binding:"omitempty,max=200"`
-	LinkedInURL string     `json:"linkedin_url"`
-	CompanyID   *uuid.UUID `json:"company_id"`
-	OwnerID     *uuid.UUID `json:"owner_id"`
-	Source      string     `json:"source"`
-	Tags        []string   `json:"tags"`
+	FirstName   string                 `json:"first_name" binding:"required,min=1,max=100"`
+	LastName    string                 `json:"last_name"  binding:"omitempty,max=100"`
+	Email       string                 `json:"email"      binding:"omitempty,email"`
+	Phone       string                 `json:"phone"      binding:"omitempty"`
+	Title       string                 `json:"title"      binding:"omitempty,max=200"`
+	LinkedInURL string                 `json:"linkedin_url"`
+	CompanyID   *uuid.UUID             `json:"company_id"`
+	OwnerID     *uuid.UUID             `json:"owner_id"`
+	Source      string                 `json:"source"`
+	Tags        []string               `json:"tags"`
 	CustomData  map[string]interface{} `json:"custom_data"`
 }
 
 type UpdateContactInput struct {
-	FirstName   *string    `json:"first_name"`
-	LastName    *string    `json:"last_name"`
-	Email       *string    `json:"email"`
-	Phone       *string    `json:"phone"`
-	Title       *string    `json:"title"`
-	LinkedInURL *string    `json:"linkedin_url"`
-	CompanyID   *uuid.UUID `json:"company_id"`
-	OwnerID     *uuid.UUID `json:"owner_id"`
-	Tags        []string   `json:"tags"`
+	FirstName   *string                `json:"first_name"`
+	LastName    *string                `json:"last_name"`
+	Email       *string                `json:"email"`
+	Phone       *string                `json:"phone"`
+	Title       *string                `json:"title"`
+	LinkedInURL *string                `json:"linkedin_url"`
+	CompanyID   *uuid.UUID             `json:"company_id"`
+	OwnerID     *uuid.UUID             `json:"owner_id"`
+	Tags        []string               `json:"tags"`
 	CustomData  map[string]interface{} `json:"custom_data"`
 }
 
@@ -285,12 +286,24 @@ type ContactService interface {
 }
 
 type contactService struct {
-	repo    repository.ContactRepository
-	auditor repository.AuditRepository
+	repo         repository.ContactRepository
+	auditor      repository.AuditRepository
+	workerClient *worker.Client
+	webhookRepo  repository.WebhookRepository
 }
 
-func NewContactService(repo repository.ContactRepository, auditor repository.AuditRepository) ContactService {
-	return &contactService{repo: repo, auditor: auditor}
+func NewContactService(
+	repo repository.ContactRepository,
+	auditor repository.AuditRepository,
+	workerClient *worker.Client,
+	webhookRepo repository.WebhookRepository,
+) ContactService {
+	return &contactService{
+		repo:         repo,
+		auditor:      auditor,
+		workerClient: workerClient,
+		webhookRepo:  webhookRepo,
+	}
 }
 
 func (s *contactService) Create(ctx context.Context, wsID uuid.UUID, in CreateContactInput) (*domain.Contact, error) {
@@ -318,6 +331,12 @@ func (s *contactService) Create(ctx context.Context, wsID uuid.UUID, in CreateCo
 	if err := s.repo.Create(ctx, c); err != nil {
 		return nil, err
 	}
+
+	
+	if s.workerClient != nil {
+		worker.FireEvent(ctx, s.workerClient, s.webhookRepo, wsID, "contact.created", c)
+	}
+
 	return c, nil
 }
 
@@ -396,26 +415,26 @@ func (s *contactService) UpdateAvatar(ctx context.Context, wsID, id uuid.UUID, a
 // ─── Deal Service ─────────────────────────────────────────────────────────────
 
 type CreateDealInput struct {
-	Title         string     `json:"title"          binding:"required,min=1,max=300"`
-	PipelineID    uuid.UUID  `json:"pipeline_id"    binding:"required"`
-	StageID       string     `json:"stage_id"       binding:"required"`
-	Value         float64    `json:"value"`
-	Currency      string     `json:"currency"`
-	Probability   float64    `json:"probability"`
-	ExpectedClose *time.Time `json:"expected_close"`
-	OwnerID       uuid.UUID  `json:"owner_id"`
-	CompanyID     *uuid.UUID `json:"company_id"`
+	Title         string      `json:"title"          binding:"required,min=1,max=300"`
+	PipelineID    uuid.UUID   `json:"pipeline_id"    binding:"required"`
+	StageID       string      `json:"stage_id"       binding:"required"`
+	Value         float64     `json:"value"`
+	Currency      string      `json:"currency"`
+	Probability   float64     `json:"probability"`
+	ExpectedClose *time.Time  `json:"expected_close"`
+	OwnerID       uuid.UUID   `json:"owner_id"`
+	CompanyID     *uuid.UUID  `json:"company_id"`
 	ContactIDs    []uuid.UUID `json:"contact_ids"`
 }
 
 type UpdateDealInput struct {
-	Title         *string    `json:"title"`
-	StageID       *string    `json:"stage_id"`
-	Value         *float64   `json:"value"`
-	Probability   *float64   `json:"probability"`
-	ExpectedClose *time.Time `json:"expected_close"`
-	OwnerID       *uuid.UUID `json:"owner_id"`
-	CompanyID     *uuid.UUID `json:"company_id"`
+	Title         *string                `json:"title"`
+	StageID       *string                `json:"stage_id"`
+	Value         *float64               `json:"value"`
+	Probability   *float64               `json:"probability"`
+	ExpectedClose *time.Time             `json:"expected_close"`
+	OwnerID       *uuid.UUID             `json:"owner_id"`
+	CompanyID     *uuid.UUID             `json:"company_id"`
 	CustomData    map[string]interface{} `json:"custom_data"`
 }
 

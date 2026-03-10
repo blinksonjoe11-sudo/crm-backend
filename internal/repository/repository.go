@@ -30,6 +30,7 @@ func (p Page) Limit() int {
 	return p.PerPage
 }
 
+
 // ─── Contact Repository ───────────────────────────────────────────────────────
 
 type ContactFilter struct {
@@ -60,6 +61,7 @@ func (r *contactRepo) Create(ctx context.Context, c *domain.Contact) error {
 
 func (r *contactRepo) GetByID(ctx context.Context, wsID, id uuid.UUID) (*domain.Contact, error) {
 	var c domain.Contact
+
 	err := r.db.WithContext(ctx).
 		Preload("Company").Preload("Owner").
 		Where("workspace_id = ? AND id = ? AND archived_at IS NULL", wsID, id).

@@ -9,7 +9,10 @@ import (
 
 	"github.com/yourorg/crm/internal/config"
 	"github.com/yourorg/crm/internal/platform"
+	"github.com/yourorg/crm/internal/repository"
 	"github.com/yourorg/crm/internal/router"
+	"github.com/yourorg/crm/internal/worker"
+	"github.com/yourorg/crm/pkg/mailer"
 	"go.uber.org/zap"
 )
 
@@ -33,12 +36,36 @@ import (
 func main() {
 	cfg := config.Load()
 
-	db     := platform.NewPostgres(cfg.DatabaseURL)
-	rdb    := platform.NewRedis(cfg.RedisURL)
+	db := platform.NewPostgres(cfg.DatabaseURL)
+	rdb := platform.NewRedis(cfg.RedisURL)
 	logger := platform.NewLogger(cfg.Env)
 	defer logger.Sync()
 
-	r := router.New(cfg, db, rdb, logger)
+	// Repositories needed by workers
+	contactRepo := repository.NewContactRepository(db)
+	taskRepo := repository.NewTaskRepository(db)
+	notifRepo := repository.NewNotificationRepository(db)
+	webhookRepo := repository.NewWebhookRepository(db)
+
+	// Worker client (enqueues jobs)
+	workerClient := worker.NewClient(cfg.RedisURL)
+	defer workerClient.Close()
+
+	// Start async workers in background
+	m := mailer.New(cfg.MailjetAPIKeyPublic, cfg.MailjetAPIKeyPrivate, cfg.MailFromEmail, cfg.MailFromName)
+	workers := worker.NewWorkers(
+		cfg.RedisURL, db, m,
+		contactRepo, taskRepo, notifRepo, webhookRepo,
+		workerClient,
+		cfg.MailFromEmail, cfg.MailFromName,
+		logger,
+	)
+	if err := workers.Start(); err != nil {
+		logger.Fatal("failed to start workers", zap.Error(err))
+	}
+	defer workers.Stop()
+
+	r := router.New(cfg, db, rdb, workerClient, logger)
 
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,

@@ -4,12 +4,11 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-
 
 type JSONB map[string]interface{}
 
@@ -40,26 +39,54 @@ func (j *JSONB) Scan(value interface{}) error {
 type StringArray []string
 
 func (s StringArray) Value() (driver.Value, error) {
-	if s == nil {
+	if len(s) == 0 {
 		return "{}", nil
 	}
-	b, _ := json.Marshal(s)
-	return string(b), nil
+	// PostgreSQL array format: {"val1","val2"} not JSON ["val1","val2"]
+	quoted := make([]string, len(s))
+	for i, v := range s {
+		v = strings.ReplaceAll(v, `\`, `\\`)
+		v = strings.ReplaceAll(v, `"`, `\"`)
+		quoted[i] = `"` + v + `"`
+	}
+	return "{" + strings.Join(quoted, ",") + "}", nil
 }
 
 func (s *StringArray) Scan(value interface{}) error {
 	if value == nil {
-		*s = StringArray{}
+		*s = []string{}
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
+	var str string
+	switch v := value.(type) {
+	case []byte:
+		str = string(v)
+	case string:
+		str = v
+	default:
 		return fmt.Errorf("cannot scan type %T into StringArray", value)
 	}
-	return json.Unmarshal(bytes, s)
+	// Strip outer braces: {"val1","val2"} -> val1,val2
+	str = strings.TrimPrefix(str, "{")
+	str = strings.TrimSuffix(str, "}")
+	if str == "" {
+		*s = []string{}
+		return nil
+	}
+	// Parse PostgreSQL array format
+	var result []string
+	for _, part := range strings.Split(str, ",") {
+		part = strings.TrimSpace(part)
+		part = strings.Trim(part, `"`)
+		part = strings.ReplaceAll(part, `\"`, `"`)
+		part = strings.ReplaceAll(part, `\\`, `\`)
+		result = append(result, part)
+	}
+	*s = result
+	return nil
 }
 
-// ─── WORKSPACE 
+// ─── WORKSPACE
 
 type Plan string
 
@@ -82,7 +109,7 @@ type Workspace struct {
 	DeletedAt *time.Time `gorm:"index"                                          json:"deleted_at,omitempty"`
 }
 
-// ─── USER 
+// ─── USER
 
 type Role string
 
@@ -142,8 +169,8 @@ type Contact struct {
 	CompanyID   *uuid.UUID  `gorm:"type:uuid;index"                                json:"company_id,omitempty"`
 	OwnerID     *uuid.UUID  `gorm:"type:uuid;index"                                json:"owner_id,omitempty"`
 	Score       int         `gorm:"default:0"                                      json:"score"`
-	Tags        StringArray `gorm:"type:jsonb;default:'[]'"                        json:"tags"`
-	CustomData  JSONB       `gorm:"type:jsonb;default:'{}'"                        json:"custom_data"`
+	Tags        StringArray `gorm:"type:text[]"                        json:"tags"`
+	CustomData  JSONB       `gorm:"type:jsonb"                        json:"custom_data"`
 	Source      string      `gorm:"size:100"                                       json:"source,omitempty"`
 	ArchivedAt  *time.Time  `gorm:"index"                                          json:"archived_at,omitempty"`
 	CreatedAt   time.Time   `                                                      json:"created_at"`
@@ -339,8 +366,8 @@ type Workflow struct {
 	WorkspaceID uuid.UUID       `gorm:"type:uuid;not null;index"                       json:"workspace_id"`
 	Name        string          `gorm:"size:200;not null"                              json:"name"`
 	Trigger     json.RawMessage `gorm:"type:jsonb;not null"                            json:"trigger"`
-	Conditions  json.RawMessage `gorm:"type:jsonb;default:'[]'"                        json:"conditions"`
-	Actions     json.RawMessage `gorm:"type:jsonb;not null"                            json:"actions"`
+	Conditions  json.RawMessage `gorm:"type:jsonb"  json:"conditions"`
+	Actions     json.RawMessage `gorm:"type:jsonb"  json:"actions"`
 	IsActive    bool            `gorm:"default:false"                                  json:"is_active"`
 	CreatedByID uuid.UUID       `gorm:"type:uuid;not null"                             json:"created_by_id"`
 	RunCount    int             `gorm:"default:0"                                      json:"run_count"`

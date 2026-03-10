@@ -13,13 +13,14 @@ import (
 	"github.com/yourorg/crm/internal/middleware"
 	"github.com/yourorg/crm/internal/repository"
 	"github.com/yourorg/crm/internal/service"
+	"github.com/yourorg/crm/internal/worker"
 	cloudinaryutil "github.com/yourorg/crm/pkg/cloudinary"
 	"github.com/yourorg/crm/pkg/mailer"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
-func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, logger *zap.Logger) *gin.Engine {
+func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worker.Client, logger *zap.Logger) *gin.Engine {
 	if cfg.Env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -46,16 +47,16 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, logger *zap.Logger)
 	m := mailer.New(cfg.MailjetAPIKeyPublic, cfg.MailjetAPIKeyPrivate, cfg.MailFromEmail, cfg.MailFromName)
 
 	// ── Repositories ─────────────────────────────────────────────────────────
-	userRepo     := repository.NewUserRepository(db)
-	contactRepo  := repository.NewContactRepository(db)
-	companyRepo  := repository.NewCompanyRepository(db)
-	dealRepo     := repository.NewDealRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	contactRepo := repository.NewContactRepository(db)
+	companyRepo := repository.NewCompanyRepository(db)
+	dealRepo := repository.NewDealRepository(db)
 	activityRepo := repository.NewActivityRepository(db)
-	taskRepo     := repository.NewTaskRepository(db)
+	taskRepo := repository.NewTaskRepository(db)
 	pipelineRepo := repository.NewPipelineRepository(db)
-	webhookRepo  := repository.NewWebhookRepository(db)
-	auditRepo    := repository.NewAuditRepository(db)
-	notifRepo    := repository.NewNotificationRepository(db)
+	webhookRepo := repository.NewWebhookRepository(db)
+	auditRepo := repository.NewAuditRepository(db)
+	notifRepo := repository.NewNotificationRepository(db)
 
 	_ = companyRepo
 	_ = pipelineRepo
@@ -63,11 +64,11 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, logger *zap.Logger)
 	_ = notifRepo
 
 	// ── Services ─────────────────────────────────────────────────────────────
-	authSvc     := service.NewAuthService(userRepo, cfg, m)
-	contactSvc  := service.NewContactService(contactRepo, auditRepo)
-	dealSvc     := service.NewDealService(dealRepo, auditRepo)
+	authSvc := service.NewAuthService(userRepo, cfg, m)
+	contactSvc := service.NewContactService(contactRepo, auditRepo, workerClient, webhookRepo)
+	dealSvc := service.NewDealService(dealRepo, auditRepo)
 	activitySvc := service.NewActivityService(activityRepo)
-	taskSvc     := service.NewTaskService(taskRepo)
+	taskSvc := service.NewTaskService(taskRepo)
 
 	var uploadSvc service.UploadService
 	if cldClient != nil {
@@ -75,11 +76,11 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, logger *zap.Logger)
 	}
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
-	authH     := handler.NewAuthHandler(authSvc)
-	contactH  := handler.NewContactHandler(contactSvc, uploadSvc)
-	dealH     := handler.NewDealHandler(dealSvc)
+	authH := handler.NewAuthHandler(authSvc)
+	contactH := handler.NewContactHandler(contactSvc, uploadSvc)
+	dealH := handler.NewDealHandler(dealSvc)
 	activityH := handler.NewActivityHandler(activitySvc)
-	taskH     := handler.NewTaskHandler(taskSvc)
+	taskH := handler.NewTaskHandler(taskSvc)
 	var uploadH *handler.UploadHandler
 	if uploadSvc != nil {
 		uploadH = handler.NewUploadHandler(uploadSvc)
@@ -116,10 +117,12 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, logger *zap.Logger)
 	}
 
 	// Contacts
+	importH := handler.NewImportHandler(workerClient)
 	contacts := protected.Group("/contacts")
 	{
 		contacts.GET("", contactH.List)
 		contacts.POST("", contactH.Create)
+		contacts.POST("/import", importH.ImportContacts)
 		contacts.GET("/:id", contactH.Get)
 		contacts.PATCH("/:id", contactH.Update)
 		contacts.DELETE("/:id", middleware.RequireRole(domain.RoleManager), contactH.Delete)
@@ -127,7 +130,6 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, logger *zap.Logger)
 			contacts.POST("/:id/avatar", contactH.UploadAvatar)
 		}
 	}
-
 	// Deals
 	deals := protected.Group("/deals")
 	{

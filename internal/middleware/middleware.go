@@ -111,7 +111,7 @@ func RequireRole(minimum domain.Role) gin.HandlerFunc {
 	}
 }
 
-// ─── Rate Limiter ─────────────────────────────────────────────────────────────
+// ─── Rate Limiter 
 
 func RateLimit(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
