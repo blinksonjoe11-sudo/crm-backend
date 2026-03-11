@@ -8,7 +8,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-// ─── Task type constants ───────────────────────────────────────────────────────
+//  Task type constants 
 
 const (
 	TypeEmailSend       = "email:send"
@@ -17,7 +17,7 @@ const (
 	TypeWorkflowTrigger = "workflow:trigger"
 )
 
-// ─── Payloads ─────────────────────────────────────────────────────────────────
+//  Payloads 
 
 type EmailPayload struct {
 	To       string `json:"to"`
@@ -50,7 +50,7 @@ type WorkflowPayload struct {
 	Data        json.RawMessage `json:"data"`
 }
 
-// ─── Enqueue helpers ──────────────────────────────────────────────────────────
+//  Enqueue helpers 
 
 func NewEmailTask(p EmailPayload) (*asynq.Task, error) {
 	b, err := json.Marshal(p)
@@ -84,7 +84,7 @@ func NewWorkflowTask(p WorkflowPayload) (*asynq.Task, error) {
 	return asynq.NewTask(TypeWorkflowTrigger, b), nil
 }
 
-// ─── Client wrapper ───────────────────────────────────────────────────────────
+//  Client wrapper 
 
 type Client struct {
 	asynq *asynq.Client
@@ -139,7 +139,7 @@ func (c *Client) Close() error {
 	return c.asynq.Close()
 }
 
-// ─── Server ───────────────────────────────────────────────────────────────────
+//  Server 
 
 func NewServer(redisURL string) *asynq.Server {
 	opt, err := asynq.ParseRedisURI(redisURL)

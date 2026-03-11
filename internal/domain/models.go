@@ -35,14 +35,14 @@ func (j *JSONB) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, j)
 }
 
-// StringArray for PostgreSQL text[]
+
 type StringArray []string
 
 func (s StringArray) Value() (driver.Value, error) {
 	if len(s) == 0 {
 		return "{}", nil
 	}
-	// PostgreSQL array format: {"val1","val2"} not JSON ["val1","val2"]
+
 	quoted := make([]string, len(s))
 	for i, v := range s {
 		v = strings.ReplaceAll(v, `\`, `\\`)
@@ -66,14 +66,14 @@ func (s *StringArray) Scan(value interface{}) error {
 	default:
 		return fmt.Errorf("cannot scan type %T into StringArray", value)
 	}
-	// Strip outer braces: {"val1","val2"} -> val1,val2
+	
 	str = strings.TrimPrefix(str, "{")
 	str = strings.TrimSuffix(str, "}")
 	if str == "" {
 		*s = []string{}
 		return nil
 	}
-	// Parse PostgreSQL array format
+
 	var result []string
 	for _, part := range strings.Split(str, ",") {
 		part = strings.TrimSpace(part)
@@ -86,7 +86,7 @@ func (s *StringArray) Scan(value interface{}) error {
 	return nil
 }
 
-// ─── WORKSPACE
+//  WORKSPACE
 
 type Plan string
 
@@ -109,7 +109,7 @@ type Workspace struct {
 	DeletedAt *time.Time `gorm:"index"                                          json:"deleted_at,omitempty"`
 }
 
-// ─── USER
+//  USER
 
 type Role string
 
@@ -155,7 +155,7 @@ type RefreshToken struct {
 	CreatedAt time.Time `                                                      json:"created_at"`
 }
 
-// ─── CONTACT ─────────────────────────────────────────────────────────────────
+//  CONTACT 
 
 type Contact struct {
 	ID          uuid.UUID   `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -213,13 +213,13 @@ type Company struct {
 	Deals    []Deal    `gorm:"foreignKey:CompanyID" json:"deals,omitempty"`
 }
 
-// ─── PIPELINE & DEAL ─────────────────────────────────────────────────────────
+//  PIPELINE & DEAL 
 
 type PipelineStage struct {
 	ID          string  `json:"id"`
 	Name        string  `json:"name"`
 	Order       int     `json:"order"`
-	Probability float64 `json:"probability"` // 0-100
+	Probability float64 `json:"probability"` 
 	Color       string  `json:"color"`
 }
 
@@ -283,7 +283,7 @@ func (li *LineItem) Total() float64 {
 	return li.Quantity * li.UnitPrice * (1 - li.Discount/100)
 }
 
-// ─── ACTIVITY ────────────────────────────────────────────────────────────────
+//  ACTIVITY 
 
 type ActivityType string
 
@@ -316,7 +316,7 @@ type Activity struct {
 	User    *User    `gorm:"foreignKey:UserID"    json:"user,omitempty"`
 }
 
-// ─── TASK ────────────────────────────────────────────────────────────────────
+//  TASK 
 
 type TaskPriority string
 
@@ -346,7 +346,7 @@ type Task struct {
 	Deal     *Deal    `gorm:"foreignKey:DealID"      json:"deal,omitempty"`
 }
 
-// ─── EMAIL TEMPLATE ──────────────────────────────────────────────────────────
+//  EMAIL TEMPLATE 
 
 type EmailTemplate struct {
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -359,7 +359,7 @@ type EmailTemplate struct {
 	UpdatedAt   time.Time `                                                      json:"updated_at"`
 }
 
-// ─── WORKFLOW ────────────────────────────────────────────────────────────────
+//  WORKFLOW 
 
 type Workflow struct {
 	ID          uuid.UUID       `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -375,7 +375,7 @@ type Workflow struct {
 	UpdatedAt   time.Time       `                                                      json:"updated_at"`
 }
 
-// ─── CUSTOM FIELD ────────────────────────────────────────────────────────────
+//  CUSTOM FIELD 
 
 type FieldType string
 
@@ -402,7 +402,7 @@ type CustomField struct {
 	CreatedAt   time.Time       `                                                      json:"created_at"`
 }
 
-// ─── WEBHOOK ─────────────────────────────────────────────────────────────────
+//  WEBHOOK 
 
 type Webhook struct {
 	ID          uuid.UUID   `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -428,7 +428,7 @@ type WebhookDelivery struct {
 	CreatedAt   time.Time  `                                                     json:"created_at"`
 }
 
-// ─── AUDIT LOG ───────────────────────────────────────────────────────────────
+//  AUDIT LOG 
 
 type AuditLog struct {
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -444,7 +444,7 @@ type AuditLog struct {
 	Actor *User `gorm:"foreignKey:ActorID" json:"actor,omitempty"`
 }
 
-// ─── NOTIFICATION ────────────────────────────────────────────────────────────
+//  NOTIFICATION 
 
 type Notification struct {
 	ID          uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
@@ -457,7 +457,7 @@ type Notification struct {
 	CreatedAt   time.Time  `                                                      json:"created_at"`
 }
 
-// ─── TEAM ────────────────────────────────────────────────────────────────────
+//  TEAM 
 
 type Team struct {
 	ID          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`

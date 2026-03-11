@@ -17,7 +17,7 @@ func NewUploadService(client *cloudinaryutil.Client) UploadService {
 	return &uploadService{client: client}
 }
 
-// folder returns the Cloudinary folder path: crm/{workspace_id}/{type}
+
 func (s *uploadService) folder(wsID uuid.UUID, resourceType string) string {
 	return fmt.Sprintf("crm/%s/%s", wsID.String(), resourceType)
 }
@@ -31,7 +31,7 @@ func (s *uploadService) UploadContactAvatar(ctx context.Context, wsID uuid.UUID,
 	if err != nil {
 		return "", err
 	}
-	// Return optimised transformation URL for a 200x200 face crop
+	
 	return s.client.TransformURL(result.PublicID, "w_200,h_200,c_fill,g_face,f_auto,q_auto"), nil
 }
 

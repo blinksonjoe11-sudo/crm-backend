@@ -22,8 +22,7 @@ func NewImportHandler(workerClient *worker.Client) *ImportHandler {
 	return &ImportHandler{workerClient: workerClient}
 }
 
-// ImportContacts — POST /contacts/import
-// Accepts multipart/form-data with field "file" (CSV or JSON)
+
 func (h *ImportHandler) ImportContacts(c *gin.Context) {
 	wsID := middleware.WorkspaceIDFromCtx(c)
 	userID := middleware.UserIDFromCtx(c)
@@ -38,7 +37,7 @@ func (h *ImportHandler) ImportContacts(c *gin.Context) {
 	}
 	defer file.Close()
 
-	if header.Size > 10<<20 { // 10 MB limit
+	if header.Size > 10<<20 { 
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"error":   gin.H{"message": "file too large, max 10 MB"},
@@ -109,7 +108,7 @@ func (h *ImportHandler) ImportContacts(c *gin.Context) {
 	})
 }
 
-// ─── parsers ─────────────────────────────────────────────────────────────────
+//  parsers //
 
 func parseCSV(r io.Reader) ([][]string, error) {
 	reader := csv.NewReader(r)
@@ -123,14 +122,7 @@ func parseCSV(r io.Reader) ([][]string, error) {
 	return rows, nil
 }
 
-// parseJSON converts a JSON array of objects into [][]string (header + rows)
-// so it matches the same format the import worker expects.
-//
-// Input JSON format:
-// [
-//   {"first_name":"Jane","last_name":"Smith","email":"jane@example.com"},
-//   {"first_name":"Bob","last_name":"Jones","email":"bob@example.com"}
-// ]
+
 func parseJSON(r io.Reader) ([][]string, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
@@ -146,7 +138,7 @@ func parseJSON(r io.Reader) ([][]string, error) {
 		return nil, fmt.Errorf("JSON array is empty")
 	}
 
-	// Use a fixed column order matching what the import worker expects
+	
 	headers := []string{
 		"first_name", "last_name", "email", "phone",
 		"title", "source", "tags",

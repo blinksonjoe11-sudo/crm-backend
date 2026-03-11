@@ -91,7 +91,7 @@ func (w *WebhookWorker) deliver(p WebhookPayload) (int, string, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "CRM-Webhook/1.0")
 
-	// HMAC-SHA256 signature so receiver can verify authenticity
+	
 	if p.Secret != "" {
 		mac := hmac.New(sha256.New, []byte(p.Secret))
 		mac.Write(body)
@@ -109,8 +109,7 @@ func (w *WebhookWorker) deliver(p WebhookPayload) (int, string, error) {
 	return resp.StatusCode, string(respBody), nil
 }
 
-// FireEvent is called from services to enqueue a webhook delivery for all
-// registered webhooks in the workspace that subscribe to the given event.
+
 func FireEvent(ctx context.Context, client *Client, webhookRepo repository.WebhookRepository, wsID uuid.UUID, event string, data interface{}) {
 	hooks, err := webhookRepo.FindByEvent(ctx, wsID, event)
 	if err != nil || len(hooks) == 0 {

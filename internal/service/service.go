@@ -19,7 +19,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ─── Errors ───────────────────────────────────────────────────────────────────
+// ─── Errors ────────────
 
 var (
 	ErrNotFound           = errors.New("not found")
@@ -31,7 +31,7 @@ var (
 	ErrWeakPassword       = errors.New("password must be at least 8 characters with upper, lower, digit")
 )
 
-// ─── Auth Service ─────────────────────────────────────────────────────────────
+// ─── Auth Service ──────
 
 type RegisterInput struct {
 	WorkspaceName string `json:"workspace_name" binding:"required,min=2,max=100"`
@@ -332,7 +332,7 @@ func (s *contactService) Create(ctx context.Context, wsID uuid.UUID, in CreateCo
 		return nil, err
 	}
 
-	
+	// Fire webhook in background
 	if s.workerClient != nil {
 		worker.FireEvent(ctx, s.workerClient, s.webhookRepo, wsID, "contact.created", c)
 	}
@@ -412,7 +412,7 @@ func (s *contactService) UpdateAvatar(ctx context.Context, wsID, id uuid.UUID, a
 	return s.repo.Update(ctx, c)
 }
 
-// ─── Deal Service ─────────────────────────────────────────────────────────────
+//  Deal Service 
 
 type CreateDealInput struct {
 	Title         string      `json:"title"          binding:"required,min=1,max=300"`
@@ -594,7 +594,7 @@ func (s *dealService) RemoveContact(ctx context.Context, wsID, dealID, contactID
 	return s.repo.RemoveContact(ctx, dealID, contactID)
 }
 
-// ─── Activity Service ─────────────────────────────────────────────────────────
+// ─── Activity Service ──
 
 type CreateActivityInput struct {
 	Type       domain.ActivityType `json:"type"        binding:"required"`
@@ -678,7 +678,7 @@ func (s *activityService) Delete(ctx context.Context, wsID, id uuid.UUID) error 
 	return s.repo.Delete(ctx, wsID, id)
 }
 
-// ─── Task Service ─────────────────────────────────────────────────────────────
+//  Task Service
 
 type CreateTaskInput struct {
 	Title       string              `json:"title"       binding:"required,min=1,max=500"`
@@ -772,21 +772,20 @@ func (s *taskService) Delete(ctx context.Context, wsID, id uuid.UUID) error {
 	return s.repo.Delete(ctx, wsID, id)
 }
 
-// ─── Upload Service ───────────────────────────────────────────────────────────
-// Wraps Cloudinary and enforces workspace-scoped folder naming.
+
 
 type UploadService interface {
-	// UploadContactAvatar uploads an avatar for a contact and returns the secure URL.
+
 	UploadContactAvatar(ctx context.Context, wsID uuid.UUID, contactID string, file interface{}, header interface{}) (string, error)
-	// UploadCompanyLogo uploads a logo for a company and returns the secure URL.
+
 	UploadCompanyLogo(ctx context.Context, wsID uuid.UUID, companyID string, file interface{}, header interface{}) (string, error)
-	// UploadAttachment uploads any file attachment linked to a deal/contact.
+
 	UploadAttachment(ctx context.Context, wsID uuid.UUID, entityID string, file interface{}, header interface{}) (string, error)
-	// UploadWorkspaceLogo uploads a workspace logo.
+	
 	UploadWorkspaceLogo(ctx context.Context, wsID uuid.UUID, file interface{}, header interface{}) (string, error)
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+// ─── helpers ──────────
 
 func validatePassword(p string) error {
 	if len(p) < 8 {

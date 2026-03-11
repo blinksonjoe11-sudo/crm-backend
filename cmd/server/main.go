@@ -16,23 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// @title           CRM API
-// @version         1.0
-// @description     Full-featured CRM backend built with Go + Gin
-// @termsOfService  https://yourcrm.com/terms
 
-// @contact.name   API Support
-// @contact.email  support@yourcrm.com
-
-// @license.name  Apache 2.0
-// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host      localhost:8080
-// @BasePath  /api/v1
-
-// @securityDefinitions.apikey BearerAuth
-// @in header
-// @name Authorization
 func main() {
 	cfg := config.Load()
 
@@ -41,17 +25,17 @@ func main() {
 	logger := platform.NewLogger(cfg.Env)
 	defer logger.Sync()
 
-	// Repositories needed by workers
+	
 	contactRepo := repository.NewContactRepository(db)
 	taskRepo := repository.NewTaskRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
 	webhookRepo := repository.NewWebhookRepository(db)
 
-	// Worker client (enqueues jobs)
+	
 	workerClient := worker.NewClient(cfg.RedisURL)
 	defer workerClient.Close()
 
-	// Start async workers in background
+	
 	m := mailer.New(cfg.MailjetAPIKeyPublic, cfg.MailjetAPIKeyPrivate, cfg.MailFromEmail, cfg.MailFromName)
 	workers := worker.NewWorkers(
 		cfg.RedisURL, db, m,
@@ -75,7 +59,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Graceful shutdown
+	
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 

@@ -27,14 +27,14 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worke
 
 	r := gin.New()
 
-	// ── Global middleware ────────────────────────────────────────────────────
+	//  middleware 
 	r.Use(middleware.Recovery(logger))
 	r.Use(middleware.RequestLogger(logger))
 	r.Use(middleware.CORS(cfg.AllowedOrigins))
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.RateLimit(rdb, 300, time.Minute))
 
-	// ── Infrastructure ───────────────────────────────────────────────────────
+
 	cldClient, err := cloudinaryutil.New(
 		cfg.CloudinaryCloudName,
 		cfg.CloudinaryAPIKey,
@@ -46,7 +46,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worke
 
 	m := mailer.New(cfg.MailjetAPIKeyPublic, cfg.MailjetAPIKeyPrivate, cfg.MailFromEmail, cfg.MailFromName)
 
-	// ── Repositories ─────────────────────────────────────────────────────────
+	//  Repositories 
 	userRepo := repository.NewUserRepository(db)
 	contactRepo := repository.NewContactRepository(db)
 	companyRepo := repository.NewCompanyRepository(db)
@@ -63,7 +63,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worke
 	_ = webhookRepo
 	_ = notifRepo
 
-	// ── Services ─────────────────────────────────────────────────────────────
+	//  Services 
 	authSvc := service.NewAuthService(userRepo, cfg, m)
 	contactSvc := service.NewContactService(contactRepo, auditRepo, workerClient, webhookRepo)
 	dealSvc := service.NewDealService(dealRepo, auditRepo)
@@ -75,7 +75,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worke
 		uploadSvc = service.NewUploadService(cldClient)
 	}
 
-	// ── Handlers ─────────────────────────────────────────────────────────────
+	//  Handlers 
 	authH := handler.NewAuthHandler(authSvc)
 	contactH := handler.NewContactHandler(contactSvc, uploadSvc)
 	dealH := handler.NewDealHandler(dealSvc)
@@ -86,11 +86,11 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worke
 		uploadH = handler.NewUploadHandler(uploadSvc)
 	}
 
-	// ── Health ────────────────────────────────────────────────────────────────
+	//  Health 
 	r.GET("/health", handler.HealthHandler)
-	r.GET("/ping", func(c *gin.Context) { c.String(200, "pong") })
+	r.GET("/ping", func(c *gin.Context) { c.String(200, "pinggggg") })
 
-	// ── API v1 ────────────────────────────────────────────────────────────────
+	//  API v1 
 	v1 := r.Group("/api/v1")
 
 	// Auth (public)
@@ -164,7 +164,7 @@ func New(cfg *config.Config, db *gorm.DB, rdb *redis.Client, workerClient *worke
 		tasks.DELETE("/:id", taskH.Delete)
 	}
 
-	// Generic file uploads
+
 
 	// Pipelines
 	pipelines := protected.Group("/pipelines")

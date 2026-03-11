@@ -46,15 +46,14 @@ func New(cloudName, apiKey, apiSecret string) (*Client, error) {
 	return &Client{cld: cld, cloudName: cloudName}, nil
 }
 
-// UploadFile uploads a multipart file into a given folder.
-// Resource type (image/video/raw) is auto-detected from the extension.
+
 func (c *Client) UploadFile(
 	ctx context.Context,
 	file multipart.File,
 	header *multipart.FileHeader,
 	folder string,
 ) (*UploadResult, error) {
-	if header.Size > 25<<20 { // 25 MB cap
+	if header.Size > 25<<20 { 
 		return nil, fmt.Errorf("cloudinary: file exceeds 25 MB limit")
 	}
 

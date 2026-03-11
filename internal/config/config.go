@@ -18,20 +18,16 @@ type Config struct {
 	JWTExpiry        time.Duration
 	JWTRefreshExpiry time.Duration
 	AllowedOrigins   []string
-
-	// Cloudinary
 	CloudinaryCloudName string
 	CloudinaryAPIKey    string
 	CloudinaryAPISecret string
 
-	// Email
-	// Mailjet
 	MailjetAPIKeyPublic  string
 	MailjetAPIKeyPrivate string
 	MailFromEmail        string
 	MailFromName         string
 
-	// OAuth
+
 	GoogleClientID     string
 	GoogleClientSecret string
 	GoogleCallbackURL  string

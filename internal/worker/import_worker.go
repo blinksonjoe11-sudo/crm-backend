@@ -20,8 +20,6 @@ func NewImportWorker(contactRepo repository.ContactRepository) *ImportWorker {
 	return &ImportWorker{contactRepo: contactRepo}
 }
 
-// ProcessTask expects rows where index 0 = header row:
-// first_name, last_name, email, phone, title, company, source, tags
 func (w *ImportWorker) ProcessTask(ctx context.Context, task *asynq.Task) error {
 	var p ImportPayload
 	if err := json.Unmarshal(task.Payload(), &p); err != nil {
@@ -42,7 +40,7 @@ func (w *ImportWorker) ProcessTask(ctx context.Context, task *asynq.Task) error 
 		return fmt.Errorf("import worker: no data rows found")
 	}
 
-	// Parse header row to build column index map
+	
 	headers := p.Rows[0]
 	colIndex := map[string]int{}
 	for i, h := range headers {
@@ -77,7 +75,7 @@ func (w *ImportWorker) ProcessTask(ctx context.Context, task *asynq.Task) error 
 
 		email := strings.ToLower(col(row, "email"))
 
-		// Skip duplicate emails within same batch
+	
 		duplicate := false
 		for _, existing := range contacts {
 			if email != "" && existing.Email == email {

@@ -22,7 +22,7 @@ const (
 	KeyWorkspace   = "workspace"
 )
 
-// ─── Context helpers 
+//  Context helpers 
 
 func UserIDFromCtx(c *gin.Context) uuid.UUID {
 	id, _ := c.Get(KeyUserID)
@@ -44,7 +44,7 @@ func UserFromCtx(c *gin.Context) *domain.User {
 	return u.(*domain.User)
 }
 
-// ─── JWT Auth ─────────────────────────────────────────────────────────────────
+//  JWT Auth //
 
 func JWTAuth(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -73,7 +73,7 @@ func JWTAuth(secret string) gin.HandlerFunc {
 	}
 }
 
-// ─── Load Workspace & User ────────────────────────────────────────────────────
+//  Load Workspace & User 
 
 func LoadUser(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -88,7 +88,7 @@ func LoadUser(db *gorm.DB) gin.HandlerFunc {
 	}
 }
 
-// ─── RBAC ─────────────────────────────────────────────────────────────────────
+// ─── RBAC //────
 
 // roleRank maps each role to a numeric level. Higher = more permissions.
 var roleRank = map[domain.Role]int{
@@ -135,7 +135,7 @@ func RateLimit(rdb *redis.Client, limit int, window time.Duration) gin.HandlerFu
 	}
 }
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
+// ─── CORS //────
 
 func CORS(allowedOrigins []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -164,7 +164,7 @@ func CORS(allowedOrigins []string) gin.HandlerFunc {
 	}
 }
 
-// ─── Request Logger ───────────────────────────────────────────────────────────
+// ─── Request Logger //──
 
 func RequestLogger(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -180,7 +180,7 @@ func RequestLogger(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-// ─── Recovery ────────────────────────────────────────────────────────────────
+// ─── Recovery //───────
 
 func Recovery(logger *zap.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -194,7 +194,7 @@ func Recovery(logger *zap.Logger) gin.HandlerFunc {
 	}
 }
 
-// ─── Security Headers ─────────────────────────────────────────────────────────
+// ─── Security Headers //
 
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -207,7 +207,7 @@ func SecurityHeaders() gin.HandlerFunc {
 	}
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+//  helpers //
 
 func errResp(msg string) gin.H {
 	return gin.H{"success": false, "error": gin.H{"message": msg}}

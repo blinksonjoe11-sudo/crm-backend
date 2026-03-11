@@ -15,10 +15,10 @@ import (
 )
 
 type WorkflowWorker struct {
-	db          *gorm.DB
-	taskRepo    repository.TaskRepository
-	notifRepo   repository.NotificationRepository
-	emailClient *Client
+	db           *gorm.DB
+	taskRepo     repository.TaskRepository
+	notifRepo    repository.NotificationRepository
+	emailClient  *Client
 	mailerConfig struct {
 		fromEmail string
 		fromName  string

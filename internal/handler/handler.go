@@ -64,7 +64,7 @@ func bindErr(c *gin.Context, err error) {
 	})
 }
 
-// ─── Auth Handler ─────────────────────────────────────────────────────────────
+//  Auth Handler //
 
 type AuthHandler struct{ svc service.AuthService }
 
@@ -183,7 +183,7 @@ func setRefreshCookie(c *gin.Context, token string) {
 	c.SetCookie("refresh_token", token, 30*24*3600, "/api/v1/auth", "", true, true)
 }
 
-// ─── Contact Handler ──────────────────────────────────────────────────────────
+//  Contact Handler 
 
 type ContactHandler struct {
 	svc    service.ContactService
@@ -276,7 +276,7 @@ func (h *ContactHandler) Delete(c *gin.Context) {
 	noContent(c)
 }
 
-// UploadAvatar — POST /contacts/:id/avatar  (multipart/form-data, field: "avatar")
+
 func (h *ContactHandler) UploadAvatar(c *gin.Context) {
 	wsID := middleware.WorkspaceIDFromCtx(c)
 	id := c.Param("id")
@@ -302,7 +302,7 @@ func (h *ContactHandler) UploadAvatar(c *gin.Context) {
 	ok(c, gin.H{"avatar_url": url})
 }
 
-// ─── Deal Handler ─────────────────────────────────────────────────────────────
+//  Deal Handler //
 
 type DealHandler struct{ svc service.DealService }
 
@@ -458,7 +458,7 @@ func (h *DealHandler) RemoveContact(c *gin.Context) {
 	noContent(c)
 }
 
-// ─── Activity Handler ─────────────────────────────────────────────────────────
+//  Activity Handler 
 
 type ActivityHandler struct{ svc service.ActivityService }
 
@@ -532,7 +532,7 @@ func (h *ActivityHandler) Delete(c *gin.Context) {
 	noContent(c)
 }
 
-// ─── Task Handler ─────────────────────────────────────────────────────────────
+// ─── Task Handler //
 
 type TaskHandler struct{ svc service.TaskService }
 

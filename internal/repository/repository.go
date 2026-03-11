@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// ─── Pagination ───────────────────────────────────────────────────────────────
+// ─── Pagination ───
 
 type Page struct {
 	Page    int `form:"page,default=1"`
@@ -31,7 +31,7 @@ func (p Page) Limit() int {
 }
 
 
-// ─── Contact Repository ───────────────────────────────────────────────────────
+// ─── Contact Repository 
 
 type ContactFilter struct {
 	Search    string
@@ -125,7 +125,7 @@ func (r *contactRepo) BulkCreate(ctx context.Context, contacts []domain.Contact)
 	return r.db.WithContext(ctx).CreateInBatches(contacts, 100).Error
 }
 
-// ─── Company Repository ───────────────────────────────────────────────────────
+//  Company Repository 
 
 type CompanyFilter struct {
 	Search   string
@@ -200,7 +200,7 @@ func (r *companyRepo) Delete(ctx context.Context, wsID, id uuid.UUID) error {
 		Update("archived_at", now).Error
 }
 
-// ─── Deal Repository ──────────────────────────────────────────────────────────
+//  Deal Repository 
 
 type DealFilter struct {
 	PipelineID *uuid.UUID
@@ -289,7 +289,7 @@ func (r *dealRepo) RemoveContact(ctx context.Context, dealID, contactID uuid.UUI
 		Exec("DELETE FROM deal_contacts WHERE deal_id=? AND contact_id=?", dealID, contactID).Error
 }
 
-// ─── Activity Repository ──────────────────────────────────────────────────────
+//  Activity Repository 
 
 type ActivityFilter struct {
 	ContactID *uuid.UUID
@@ -355,7 +355,7 @@ func (r *activityRepo) Delete(ctx context.Context, wsID, id uuid.UUID) error {
 		Delete(&domain.Activity{}).Error
 }
 
-// ─── Task Repository ──────────────────────────────────────────────────────────
+//  Task Repository 
 
 type TaskFilter struct {
 	AssigneeID  *uuid.UUID
@@ -427,7 +427,7 @@ func (r *taskRepo) Delete(ctx context.Context, wsID, id uuid.UUID) error {
 		Where("workspace_id = ? AND id = ?", wsID, id).Delete(&domain.Task{}).Error
 }
 
-// ─── User Repository ──────────────────────────────────────────────────────────
+//  User Repository 
 
 type UserRepository interface {
 	CreateWorkspace(ctx context.Context, ws *domain.Workspace) error
@@ -512,7 +512,7 @@ func (r *userRepo) DeleteAllRefreshTokens(ctx context.Context, userID uuid.UUID)
 	return r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&domain.RefreshToken{}).Error
 }
 
-// ─── Pipeline Repository ──────────────────────────────────────────────────────
+//  Pipeline Repository 
 
 type PipelineRepository interface {
 	Create(ctx context.Context, p *domain.Pipeline) error
@@ -550,7 +550,7 @@ func (r *pipelineRepo) Delete(ctx context.Context, wsID, id uuid.UUID) error {
 	return r.db.WithContext(ctx).Where("workspace_id = ? AND id = ?", wsID, id).Delete(&domain.Pipeline{}).Error
 }
 
-// ─── Webhook Repository ───────────────────────────────────────────────────────
+// ─── Webhook Repository 
 
 type WebhookRepository interface {
 	Create(ctx context.Context, w *domain.Webhook) error
@@ -612,7 +612,7 @@ func (r *webhookRepo) ListDeliveries(ctx context.Context, webhookID uuid.UUID, p
 	return deliveries, total, err
 }
 
-// ─── Audit Log Repository ─────────────────────────────────────────────────────
+// ─── Audit Log Repository ──
 
 type AuditRepository interface {
 	Log(ctx context.Context, entry *domain.AuditLog) error
@@ -639,7 +639,7 @@ func (r *auditRepo) List(ctx context.Context, wsID uuid.UUID, entity string, pg 
 	return logs, total, err
 }
 
-// ─── Notification Repository ──────────────────────────────────────────────────
+// ─── Notification Repository ────
 
 type NotificationRepository interface {
 	Create(ctx context.Context, n *domain.Notification) error
